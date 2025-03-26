@@ -1,4 +1,3 @@
-
 const express = require("express");
 const cors = require("cors");
 const puppeteer = require("puppeteer");
@@ -27,12 +26,30 @@ app.get("/fetch-product", async (req, res) => {
     const page = await browser.newPage();
     await page.goto(url, { waitUntil: "networkidle2", timeout: 60000 });
 
-    const finalUrl = page.url();
-    const html = await page.content();
+    // Extract product details
+    const productDetails = await page.evaluate(() => {
+      const productName = document.querySelector('h1.product-title-text') ? document.querySelector('h1.product-title-text').innerText : "שם מוצר לא נמצא";
+      const price = document.querySelector('.product-price-value') ? document.querySelector('.product-price-value').innerText : "מחיר לא זמין";
+      const rating = document.querySelector('.overview-rating-average') ? document.querySelector('.overview-rating-average').innerText : "לא זמין";
+      const sales = document.querySelector('.product-reviewer-sold') ? document.querySelector('.product-reviewer-sold').innerText : "לא ידוע";
+      const discount = document.querySelector('.product-discount') ? document.querySelector('.product-discount').innerText : "לא זמין";
+      const finalUrl = window.location.href;
+
+      return {
+        productName,
+        price,
+        rating,
+        sales,
+        discount,
+        finalUrl
+      };
+    });
 
     await browser.close();
 
-    res.json({ finalUrl, html });
+    // Return structured JSON with product data
+    res.json(productDetails);
+
   } catch (error) {
     console.error("❌ Error:", error);
     res.status(500).json({ error: "Failed to fetch product page" });
